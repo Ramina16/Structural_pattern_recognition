@@ -90,33 +90,46 @@ def find_all_penalties(penalties, imgs_x1, grammar_len, require_rest, leave_rest
     return full_img_penalties
 
 
-def fing_markup(penalties_matrix, require_rest, leave_rest, verbose=2):
-    idx_leave_rest = np.where(leave_rest == 1)
-    idx_not_leave_rest = np.where(leave_rest == 0)
+def find_markup(penalties_matrix, require_rest, leave_rest, verbose=2):
+    idx_leave_rest = np.where(leave_rest == 1)[0]
+    idx_not_leave_rest = np.where(leave_rest == 0)[0]
+    min_penalty_idx = []
+    # find min penalties for each case per binary column
     for i in range(penalties_matrix.shape[0] - 2, -1, -1):
-        prev_penalty_leave_rest = penalties_matrix[i + 1, idx_leave_rest].min()
-        prev_penalty_not_leave_rest = penalties_matrix[i + 1, idx_not_leave_rest].min()
+        idx_prev_leave_rest = idx_leave_rest[penalties_matrix[i + 1, idx_leave_rest].argmin()]
+        idx_prev_not_leave_rest = idx_not_leave_rest[penalties_matrix[i + 1, idx_not_leave_rest].argmin()]
         for this_col in range(penalties_matrix.shape[1]):
             if require_rest[this_col] == 1:
-                penalties_matrix[i, this_col] = penalties_matrix[i, this_col] + prev_penalty_leave_rest
+                penalties_matrix[i, this_col] = (penalties_matrix[i, this_col] +
+                                                 penalties_matrix[i + 1, idx_prev_leave_rest]
+                                                 )
             if require_rest[this_col] == 0:
-                penalties_matrix[i, this_col] = penalties_matrix[i, this_col] + prev_penalty_not_leave_rest
+                penalties_matrix[i, this_col] = (penalties_matrix[i, this_col] +
+                                                 penalties_matrix[i + 1, idx_prev_not_leave_rest]
+                                                 )
+        min_penalty_idx.insert(0, [idx_prev_leave_rest, idx_prev_not_leave_rest])
     if verbose == 2:
         print(f"\npenalties_matrix\n {penalties_matrix}")
 
-    min_penalty_idx = []
-    for i in range(penalties_matrix.shape[0]):
-        if np.min(penalties_matrix[i, :]) != np.inf:
-            min_penalty_idx.append(np.argmin(penalties_matrix[i, :]))
-        else:
-            raise Exception("incorrect input example!")
+    # combine final markup
+    result_list = []
+    result_list.append(np.argmin(penalties_matrix[0, :]))
+    if penalties_matrix[0, result_list[0]] != np.inf:
+        for i in range(penalties_matrix.shape[0] - 1):
+            if require_rest[result_list[i]] == 1:
+                result_list.append(min_penalty_idx[i][0])
+            else:
+                result_list.append(min_penalty_idx[i][1])
+    else:
+        raise Exception("incorrect input example!")
     if verbose >= 1:
-        print(f"\nmin_penalty_idx\n {min_penalty_idx}")
+        print(f"\nresult_list\n {result_list}")
 
-    result_matrix = np.zeros((3, len(min_penalty_idx)))
+    # create binary matrix according to markup
+    result_matrix = np.zeros((3, len(result_list)))
     for i in range(result_matrix.shape[1]):
-        result_matrix[2, i] = min_penalty_idx[i] % 2
-        result_matrix[1, i] = (min_penalty_idx[i] // 2) % 2
-        result_matrix[0, i] = (min_penalty_idx[i] // 4) % 2
-
+        result_matrix[2, i] = result_list[i] % 2
+        result_matrix[1, i] = (result_list[i] // 2) % 2
+        result_matrix[0, i] = (result_list[i] // 4) % 2
     return result_matrix
+

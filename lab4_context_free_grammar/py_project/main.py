@@ -23,6 +23,6 @@ if __name__ == "__main__":
     penalties_matrix = find_all_penalties(penalties, imgs_x1=labels.shape[1],
                                           grammar_len=len(require_rest),
                                           require_rest=require_rest, leave_rest=leave_rest)
-    markup = fing_markup(penalties_matrix, require_rest, leave_rest)
+    markup = find_markup(penalties_matrix, require_rest, leave_rest)
     final_img = digits_to_image(markup, zero, one)
     Image.fromarray(final_img).save("../images/markup.png")
