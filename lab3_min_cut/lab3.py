@@ -139,12 +139,6 @@ if __name__ == '__main__':
     segment1 = img[class1_slice[2]:class1_slice[3], class1_slice[0]:class1_slice[1]]
     segment2 = img[class2_slice[2]:class2_slice[3], class2_slice[0]:class2_slice[1]]
 
-    plt.figure()
-    plt.imshow(segment1)
-    plt.figure()
-    plt.imshow(segment2)
-    plt.show()
-
     segment1 = np.concatenate(segment1, axis=0)
     segment1_mean = segment1.mean(axis=0)
     segment1_cov = np.cov(segment1, rowvar=False)
